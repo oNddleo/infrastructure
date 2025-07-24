@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+```
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+        background: linear-gradient(45deg, #3498db, #2c3e50);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .controls {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .btn {
+        background: linear-gradient(45deg, #3498db, #2980b9);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        margin: 0 10px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+    }
+    
+    .btn.active {
+        background: linear-gradient(45deg, #e74c3c, #c0392b);
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    }
+    
+    .architecture {
+        display: flex;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .plane {
+        flex: 1;
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .plane:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .control-plane {
+        border-left: 5px solid #3498db;
+    }
+    
+    .data-plane {
+        border-left: 5px solid #e74c3c;
+    }
+    
+    .plane h2 {
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .control-plane h2 {
+        color: #3498db;
+    }
+    
+    .data-plane h2 {
+        color: #e74c3c;
+    }
+    
+    .icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .control-icon {
+        background: #3498db;
+    }
+    
+    .data-icon {
+        background: #e74c3c;
+    }
+    
+    .component {
+        background: #f8f9fa;
+        margin: 15px 0;
+        padding: 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .component:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    
+    .control-plane .component {
+        border-left-color: #3498db;
+    }
+    
+    .data-plane .component {
+        border-left-color: #e74c3c;
+    }
+    
+    .component.active {
+        background: linear-gradient(135deg, #667eea20, #764ba220);
+        transform: scale(1.02);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .component h3 {
+        margin-bottom: 10px;
+        color: #2c3e50;
+        font-size: 1.2em;
+    }
+    
+    .component p {
+        color: #7f8c8d;
+        line-height: 1.6;
+        font-size: 14px;
+    }
+    
+    .flow-diagram {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-top: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .flow-diagram h3 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 1.3em;
+        text-align: center;
+    }
+    
+    .flow-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+    }
+    
+    .step {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        min-width: 200px;
+        text-align: center;
+        position: relative;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .step:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 25px rgba(116, 185, 255, 0.3);
+    }
+    
+    .step.active {
+        background: linear-gradient(135deg, #fd79a8, #e84393);
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .step::after {
+        content: '→';
+        position: absolute;
+        right: -25px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 20px;
+        color: #74b9ff;
+    }
+    
+    .step:last-child::after {
+        display: none;
+    }
+    
+    .info-panel {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        border-left: 4px solid #17a2b8;
+        display: none;
+    }
+    
+    .info-panel.show {
+        display: block;
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .highlight {
+        background: linear-gradient(135deg, #ffeaa7, #fdcb6e) !important;
+        animation: highlight 1s ease;
+    }
+    
+    @keyframes highlight {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    @media (max-width: 768px) {
+        .architecture {
+            flex-direction: column;
+        }
+        
+        .flow-steps {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .step::after {
+            content: '↓';
+            right: 50%;
+            top: 100%;
+            transform: translateX(50%);
+        }
+    }
+</style>
+```
+
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Kubernetes Architecture</h1>
+
+```
+    <div class="controls">
+        <button class="btn" onclick="startDemo()">Demo Workflow</button>
+        <button class="btn" onclick="resetDemo()">Reset</button>
+        <button class="btn" onclick="showComponentDetails()">Component Details</button>
+    </div>
+    
+    <div class="architecture">
+        <div class="plane control-plane">
+            <h2>
+                <div class="icon control-icon">C</div>
+                Control Plane
+            </h2>
+            
+            <div class="component" data-component="api-server">
+                <h3>🌐 API Server</h3>
+                <p>Điểm trung tâm giao tiếp, xử lý tất cả REST requests và cập nhật trạng thái cluster trong etcd.</p>
+            </div>
+            
+            <div class="component" data-component="etcd">
+                <h3>💾 etcd</h3>
+                <p>Cơ sở dữ liệu key-value phân tán lưu trữ toàn bộ cấu hình và trạng thái của cluster.</p>
+            </div>
+            
+            <div class="component" data-component="scheduler">
+                <h3>📋 Scheduler</h3>
+                <p>Quyết định pod nào sẽ chạy trên node nào dựa trên tài nguyên và constraints.</p>
+            </div>
+            
+            <div class="component" data-component="controller">
+                <h3>🎛️ Controller Manager</h3>
+                <p>Chạy các controller loops để đảm bảo trạng thái thực tế khớp với trạng thái mong muốn.</p>
+            </div>
+        </div>
+        
+        <div class="plane data-plane">
+            <h2>
+                <div class="icon data-icon">D</div>
+                Data Plane
+            </h2>
+            
+            <div class="component" data-component="kubelet">
+                <h3>🤖 kubelet</h3>
+                <p>Agent chạy trên mỗi worker node, nhận instructions từ API server và quản lý containers.</p>
+            </div>
+            
+            <div class="component" data-component="kube-proxy">
+                <h3>🌐 kube-proxy</h3>
+                <p>Quản lý network routing cho Services, đảm bảo traffic được chuyển đến đúng pods.</p>
+            </div>
+            
+            <div class="component" data-component="runtime">
+                <h3>🐳 Container Runtime</h3>
+                <p>Thực thi containers (Docker, containerd, CRI-O).</p>
+            </div>
+            
+            <div class="component" data-component="pods">
+                <h3>📦 Pods</h3>
+                <p>Đơn vị nhỏ nhất có thể deploy, chứa một hoặc nhiều containers.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flow-diagram">
+        <h3>🔄 Luồng hoạt động khi tạo Deployment</h3>
+        <div class="flow-steps">
+            <div class="step" data-step="1">1. User Request<br><small>kubectl create deployment</small></div>
+            <div class="step" data-step="2">2. API Server<br><small>Validate & Store</small></div>
+            <div class="step" data-step="3">3. Controller<br><small>Create ReplicaSet</small></div>
+            <div class="step" data-step="4">4. Scheduler<br><small>Assign Nodes</small></div>
+            <div class="step" data-step="5">5. kubelet<br><small>Start Containers</small></div>
+            <div class="step" data-step="6">6. kube-proxy<br><small>Setup Network</small></div>
+        </div>
+    </div>
+    
+    <div class="info-panel" id="info-panel">
+        <h4>Component Details</h4>
+        <div id="info-content"></div>
+    </div>
+</div>
+
+<script>
+    let demoActive = false;
+    let currentStep = 0;
+    
+    const componentDetails = {
+        'api-server': {
+            title: 'API Server',
+            description: 'API Server là thành phần trung tâm của Kubernetes cluster. Nó expose Kubernetes API và phục vụ như front-end cho control plane.',
+            features: [
+                'Authentication & Authorization',
+                'Admission Controllers',
+                'REST API endpoint',
+                'Communication với etcd'
+            ]
+        },
+        'etcd': {
+            title: 'etcd',
+            description: 'etcd là một distributed key-value store được sử dụng làm backing store cho tất cả cluster data.',
+            features: [
+                'Consistent và highly-available',
+                'Strong consistency guarantees',
+                'Watch mechanism',
+                'Backup và restore capabilities'
+            ]
+        },
+        'scheduler': {
+            title: 'Scheduler',
+            description: 'Kubernetes scheduler chịu trách nhiệm scheduling pods lên nodes phù hợp.',
+            features: [
+                'Resource-aware scheduling',
+                'Affinity/Anti-affinity rules',
+                'Taints và tolerations',
+                'Custom scheduling policies'
+            ]
+        },
+        'controller': {
+            title: 'Controller Manager',
+            description: 'Controller Manager chạy các controller processes để regulate trạng thái của cluster.',
+            features: [
+                'Deployment Controller',
+                'ReplicaSet Controller',
+                'Service Controller',
+                'Node Controller'
+            ]
+        },
+        'kubelet': {
+            title: 'kubelet',
+            description: 'kubelet là primary node agent chạy trên mỗi node và đảm bảo containers chạy trong pods.',
+            features: [
+                'Pod lifecycle management',
+                'Container health monitoring',
+                'Resource monitoring',
+                'Volume management'
+            ]
+        },
+        'kube-proxy': {
+            title: 'kube-proxy',
+            description: 'kube-proxy là network proxy chạy trên mỗi node để maintain network rules.',
+            features: [
+                'Service load balancing',
+                'iptables/ipvs rules',
+                'ClusterIP routing',
+                'NodePort handling'
+            ]
+        },
+        'runtime': {
+            title: 'Container Runtime',
+            description: 'Container runtime chịu trách nhiệm chạy containers.',
+            features: [
+                'Container lifecycle',
+                'Image management',
+                'Resource isolation',
+                'CRI interface'
+            ]
+        },
+        'pods': {
+            title: 'Pods',
+            description: 'Pod là smallest deployable unit trong Kubernetes.',
+            features: [
+                'Shared network namespace',
+                'Shared storage volumes',
+                'Co-located containers',
+                'Atomic deployment unit'
+            ]
+        }
+    };
+    
+    // Add click listeners to components
+    document.querySelectorAll('.component').forEach(component => {
+        component.addEventListener('click', function() {
+            const componentName = this.dataset.component;
+            showComponentInfo(componentName);
+            
+            // Remove active class from all components
+            document.querySelectorAll('.component').forEach(c => c.classList.remove('active'));
+            // Add active class to clicked component
+            this.classList.add('active');
+        });
+    });
+    
+    function showComponentInfo(componentName) {
+        const info = componentDetails[componentName];
+        const infoPanel = document.getElementById('info-panel');
+        const infoContent = document.getElementById('info-content');
+        
+        if (info) {
+            infoContent.innerHTML = `
+                <h5>${info.title}</h5>
+                <p style="margin: 10px 0;">${info.description}</p>
+                <h6>Key Features:</h6>
+                <ul style="margin-left: 20px;">
+                    ${info.features.map(feature => `<li>${feature}</li>`).join('')}
+                </ul>
+            `;
+            infoPanel.classList.add('show');
+        }
+    }
+    
+    function startDemo() {
+        if (demoActive) return;
+        
+        demoActive = true;
+        currentStep = 0;
+        
+        const steps = document.querySelectorAll('.step');
+        const components = document.querySelectorAll('.component');
+        
+        // Reset all styles
+        steps.forEach(step => step.classList.remove('active'));
+        components.forEach(comp => comp.classList.remove('highlight'));
+        
+        function nextStep() {
+            if (currentStep < steps.length) {
+                steps[currentStep].classList.add('active');
+                
+                // Highlight related components
+                switch(currentStep) {
+                    case 0: // User Request
+                        break;
+                    case 1: // API Server
+                        highlightComponent('api-server');
+                        break;
+                    case 2: // Controller
+                        highlightComponent('controller');
+                        break;
+                    case 3: // Scheduler
+                        highlightComponent('scheduler');
+                        break;
+                    case 4: // kubelet
+                        highlightComponent('kubelet');
+                        break;
+                    case 5: // kube-proxy
+                        highlightComponent('kube-proxy');
+                        break;
+                }
+                
+                currentStep++;
+                setTimeout(nextStep, 2000);
+            } else {
+                demoActive = false;
+            }
+        }
+        
+        nextStep();
+    }
+    
+    function highlightComponent(componentName) {
+        const component = document.querySelector(`[data-component="${componentName}"]`);
+        if (component) {
+            component.classList.add('highlight');
+            setTimeout(() => component.classList.remove('highlight'), 1800);
+        }
+    }
+    
+    function resetDemo() {
+        demoActive = false;
+        currentStep = 0;
+        
+        document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+        document.querySelectorAll('.component').forEach(comp => {
+            comp.classList.remove('highlight', 'active');
+        });
+        document.getElementById('info-panel').classList.remove('show');
+    }
+    
+    function showComponentDetails() {
+        const infoPanel = document.getElementById('info-panel');
+        const infoContent = document.getElementById('info-content');
+        
+        infoContent.innerHTML = `
+            <h5>Kubernetes Components Overview</h5>
+            <p><strong>Control Plane:</strong> Quản lý và điều phối toàn bộ cluster. Đưa ra quyết định về "làm gì" và "ở đâu".</p>
+            <p><strong>Data Plane:</strong> Nơi các workload thực sự chạy và xử lý traffic. Thực hiện "làm thế nào" và xử lý traffic thực tế.</p>
+            <p><em>Click vào từng component để xem chi tiết!</em></p>
+        `;
+        infoPanel.classList.add('show');
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        showComponentDetails();
+    });
+</script>
+```
+
+</body>
+</html>
